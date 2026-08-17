@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROOT - Risk Management Back Office</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandDark: '#ffffff',
+                        brandBg: '#f8fafc',
+                        brandTeal: '#273142',
+                        brandTealHover: '#1e2530',
+                        brandTextDark: '#2c3a4b',
+                        brandTextLight: '#64748b',
+                        brandCyan: '#00b4c5',
+                        brandCyanHover: '#009ba9'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            position: relative;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        #plexus-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.65;
+        }
+        main, aside, header {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* --- 1. Pixar-style Eye Blink Animation --- */
+        @keyframes pixar-eye-blink {
+            0%, 42%, 48%, 88%, 94%, 100% {
+                transform: scaleY(1);
+            }
+            45% {
+                transform: scaleY(0.08);
+            }
+            91% {
+                transform: scaleY(0.08);
+            }
+            92.5% {
+                transform: scaleY(1);
+            }
+            93.5% {
+                transform: scaleY(0.08);
+            }
+        }
+        .bot-eye {
+            transform-origin: 100px 148px;
+            animation: pixar-eye-blink 6.5s infinite cubic-bezier(0.45, 0, 0.55, 1);
+        }
+
+        /* --- Lightning Thruster Animation --- */
+        @keyframes lightning-flicker {
+            0%, 100% { opacity: 1; transform: scaleY(1) scaleX(1); }
+            25% { opacity: 0.6; transform: scaleY(1.2) scaleX(0.8); }
+            50% { opacity: 0.9; transform: scaleY(0.9) scaleX(1.1); }
+            75% { opacity: 0.4; transform: scaleY(1.3) scaleX(0.9); }
+        }
+        .bot-lightning {
+            animation: lightning-flicker 0.15s infinite ease-in-out;
+            transform-origin: 100px 220px;
+        }
+
+        /* --- 3. Clean Enlarging Effect --- */
+        .interactive-logo-card {
+            transition: transform 0.2s ease-out;
+            outline: none !important;
+            touch-action: none;
+            will-change: transform;
+        }
+        .interactive-logo-card:hover {
+            transform: scale(1.05);
+        }
+
+        @keyframes typing-bounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-5px); }
+        }
+        .typing-dot {
+            animation: typing-bounce 1.2s infinite ease-in-out;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        /* Hardware acceleration wrapper for bot container */
+        #rooty-bot-container {
+            will-change: left, top;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body class="bg-brandBg text-brandTextDark h-screen overflow-hidden flex flex-col">
+    <canvas id="plexus-canvas"></canvas>
+    
+    <!-- Top Header Navigation -->
+    <header class="bg-white text-brandTextDark h-14 min-h-[56px] flex items-center justify-between px-4 z-50 border-b border-gray-200/80 shadow-xs">
+        <div class="flex items-center space-x-3 select-none">
+            <div class="interactive-logo-card flex items-center space-x-2 px-2 py-1 rounded-lg cursor-pointer bg-gray-50/50 border border-gray-100">
+                <svg viewBox="0 0 100 100" class="w-6 h-6">
+                    <path d="M50 15 L50 60 M50 60 L25 80 M50 60 L75 80" stroke="#2c3a4b" stroke-width="8" stroke-linecap="round"/>
+                    <circle cx="50" cy="15" r="9" fill="#2c3a4b"/>
+                    <circle cx="25" cy="80" r="9" fill="#2c3a4b"/>
+                    <circle cx="75" cy="80" r="9" fill="#2c3a4b"/>
+                    <circle cx="50" cy="80" r="9" fill="#78889b"/>
+                </svg>
+                <span class="text-xl font-bold tracking-wider text-[#2c3a4b]">ROOT</span>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4 text-sm">
+            <div class="bg-gray-50 px-3 py-1.5 rounded border border-gray-200 flex items-center space-x-2">
+                <i class="fa-regular fa-clock text-brandTextLight"></i>
+                <span id="live-clock" class="font-mono tracking-wide text-xs text-brandTextDark">08.07.2026 13:28:27</span>
+            </div>
+            <div class="relative">
+                <select class="bg-gray-50 border border-gray-200 text-brandTextDark rounded px-2.5 py-1.5 appearance-none pr-8 focus:outline-none focus:border-brandTextLight text-xs">
+                    <option>Asia/Yerevan +04:00</option>
+                    <option>UTC +00:00</option>
+                    <option>Europe/Malta +02:00</option>
+                </select>
+                <i class="fa-solid fa-caret-down absolute right-2.5 top-2.5 text-xs text-brandTextLight pointer-events-none"></i>
+            </div>
+            <div class="relative">
+                <select class="bg-gray-50 border border-gray-200 text-brandTextDark rounded px-2.5 py-1.5 appearance-none pr-8 focus:outline-none focus:border-brandTextLight text-xs min-w-[120px]">
+                    <option>Universal</option>
+                    <option>Dynamics</option>
+                    <option>Relume (API)</option>
+                    <option>Galaxsys Direct</option>
+                    <option>Imagine Live Direct</option>
+                    <option>External</option>
+                    <option>Select All</option>
+                </select>
+                <i class="fa-solid fa-caret-down absolute right-2.5 top-2.5 text-xs text-brandTextLight pointer-events-none"></i>
+            </div>
+            <div class="relative">
+                <select class="bg-gray-50 border border-gray-200 text-brandTextDark rounded px-2.5 py-1.5 appearance-none pr-8 focus:outline-none focus:border-brandTextLight text-xs">
+                    <option>EUR</option>
+                    <option>AMD</option>
+                    <option>USD</option>
+                    <option>RUB</option>
+                </select>
+                <i class="fa-solid fa-caret-down absolute right-2.5 top-2.5 text-xs text-brandTextLight pointer-events-none"></i>
+            </div>
+
+            <button onclick="togglePlayerFilterModal()" class="text-brandTextLight hover:text-brandTextDark p-1.5 hover:bg-gray-100 rounded transition relative group" title="Advanced Player Search Filters">
+                <i class="fa-solid fa-magnifying-glass text-base"></i>
+            </button>
+            
+            <div class="relative group">
+                <button class="text-brandTextLight hover:text-brandTextDark p-1 transition flex items-center">
+                    <i class="fa-solid fa-globe text-base mr-1"></i>
+                    <span id="active-lang-label" class="text-xs font-bold uppercase">EN</span>
+                </button>
+                <div class="absolute hidden group-hover:block bg-white border border-gray-200 rounded shadow-lg py-1 text-xs z-50 w-32 mt-1 right-0">
+                    <button onclick="updateLanguageState('EN')" class="block w-full text-left px-4 py-1.5 hover:bg-gray-50 text-brandTextDark font-medium">English</button>
+                    <button onclick="updateLanguageState('AM')" class="block w-full text-left px-4 py-1.5 hover:bg-gray-50 text-brandTextDark font-medium">Armenian</button>
+                    <button onclick="updateLanguageState('RU')" class="block w-full text-left px-4 py-1.5 hover:bg-gray-50 text-brandTextDark font-medium">Russian</button>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 border-l border-gray-200 pl-4 cursor-pointer group relative">
+                <div class="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-brandTextDark font-semibold text-sm">RM</div>
+                <div class="hidden lg:block text-left">
+                    <p class="text-xs font-medium leading-none text-brandTextDark group-hover:text-brandTextLight">Risk Manager</p>
+                    <p class="text-[10px] text-brandTextLight">Admin Node</p>
+                </div>
+                <i class="fa-solid fa-angle-down text-xs text-brandTextLight"></i>
+                <div class="absolute hidden group-hover:block bg-white border border-gray-200 rounded shadow-lg py-2 text-xs z-50 w-48 right-0 mt-8">
+                    <button onclick="alert('User Configuration opened')" class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2">
+                        <i class="fa-solid fa-user-cog"></i> User Configuration
+                    </button>
+                    <button onclick="alert('Logged out successfully')" class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-red-600">
+                        <i class="fa-solid fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-white border-r border-gray-200/80 flex flex-col h-full select-none overflow-y-auto scrollbar-hide">
+            <nav class="space-y-0.5 p-2 flex-1">
+                <button onclick="switchView('dashboard-view')" id="btn-dashboard-view" class="nav-btn w-full flex items-center px-3 py-2.5 text-brandTextDark hover:bg-gray-50 rounded transition text-sm text-left font-medium">
+                    <i class="fa-solid fa-chart-line text-brandTextLight mr-3 w-5 text-center"></i>
+                    <span>Dashboards</span>
+                </button>
+                <button onclick="switchView('player-insights-view')" id="btn-player-insights-view" class="nav-btn w-full flex items-center px-3 py-2.5 text-brandTextDark hover:bg-gray-50 rounded transition text-sm text-left font-medium">
+                    <i class="fa-solid fa-user-shield text-brandTextLight mr-3 w-5 text-center"></i>
+                    <span>Player Insights</span>
+                </button>
+
+                <!-- AI Driven Tools Section -->
+                <button onclick="toggleSection(this)" class="nav-btn w-full flex items-center px-3 py-2.5 text-brandTextDark hover:bg-gray-50 rounded transition text-sm text-left font-medium">
+                    <i class="fa-solid fa-brain text-brandTextLight mr-3 w-5 text-center"></i>
+                    <span>AI Driven Tools</span>
+                    <i class="fa-solid fa-chevron-down ml-auto text-xs transition-transform"></i>
+                </button>
+                <div class="subsection hidden pl-8 space-y-0.5">
+                    <button onclick="openAiAnomalyView()" id="btn-ai-anomaly" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-microchip text-brandTextLight mr-2 w-4 text-center"></i>
+                        AI Anomaly Detection
+                    </button>
+                    <button onclick="switchAlertView('AI-Powered Smart Alerts', 'AI Driven Tools')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-robot text-brandTextLight mr-2 w-4 text-center"></i>
+                        AI-Powered Smart Alerts
+                    </button>
+                </div>
+
+                <!-- Alerting System Section -->
+                <button onclick="toggleSection(this)" class="nav-btn w-full flex items-center px-3 py-2.5 text-brandTextDark hover:bg-gray-50 rounded transition text-sm text-left font-medium">
+                    <i class="fa-solid fa-triangle-exclamation text-brandTextLight mr-3 w-5 text-center"></i>
+                    <span>Alerting System</span>
+                    <i class="fa-solid fa-chevron-down ml-auto text-xs transition-transform"></i>
+                </button>
+                <div class="subsection hidden pl-8 space-y-0.5">
+                    <button onclick="switchAlertView('Player Balance Threshold', 'Alerting System')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-balance-scale text-brandTextLight mr-2 w-4 text-center"></i>
+                        Player Balance Threshold
+                    </button>
+                    <button onclick="switchAlertView('First Time Category Bet', 'Alerting System')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-first-order text-brandTextLight mr-2 w-4 text-center"></i>
+                        First Time Category Bet
+                    </button>
+                    <button onclick="switchAlertView('Bet/Win/Ggr/Multiplier', 'Alerting System')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-chart-bar text-brandTextLight mr-2 w-4 text-center"></i>
+                        Bet/Win/Ggr/Multiplier
+                    </button>
+                    <button onclick="switchAlertView('Consecutive Cancellations', 'Alerting System')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-ban text-brandTextLight mr-2 w-4 text-center"></i>
+                        Consecutive Cancellations
+                    </button>
+                    <button onclick="switchAlertView('Bet Anomaly Alert', 'Alerting System')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-exclamation-triangle text-brandTextLight mr-2 w-4 text-center"></i>
+                        Bet Anomaly Alert
+                    </button>
+                    <button onclick="switchAlertView('Player Transaction Anomaly', 'Alerting System')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-exchange-alt text-brandTextLight mr-2 w-4 text-center"></i>
+                        Player Transaction Anomaly
+                    </button>
+                    <button onclick="switchAlertView('Jackpot & Tournament', 'Alerting System')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-trophy text-brandTextLight mr-2 w-4 text-center"></i>
+                        Jackpot & Tournament
+                    </button>
+                    <button onclick="switchAlertView('Deposit Comparison', 'Alerting System')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-money-bill-wave text-brandTextLight mr-2 w-4 text-center"></i>
+                        Deposit Comparison
+                    </button>
+                    <button onclick="switchAlertView('Listed Players Alert', 'Alerting System')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-user-shield text-brandTextLight mr-2 w-4 text-center"></i>
+                        Listed Players Alert
+                    </button>
+                    <button onclick="switchAlertView('Withdrawal Amount Anomaly', 'Alerting System')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-hand-holding-usd text-brandTextLight mr-2 w-4 text-center"></i>
+                        Withdrawal Amount Anomaly
+                    </button>
+                    <button onclick="switchAlertView('Crash Game Precision', 'Alerting System')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-rocket text-brandTextLight mr-2 w-4 text-center"></i>
+                        Crash Game Precision
+                    </button>
+                </div>
+
+                <!-- Live Casino Alerts Section -->
+                <button onclick="toggleSection(this)" class="nav-btn w-full flex items-center px-3 py-2.5 text-brandTextDark hover:bg-gray-50 rounded transition text-sm text-left font-medium">
+                    <i class="fa-solid fa-clapperboard text-brandTextLight mr-3 w-5 text-center"></i>
+                    <span>Live Casino Alerts</span>
+                    <i class="fa-solid fa-chevron-down ml-auto text-xs transition-transform"></i>
+                </button>
+                <div class="subsection hidden pl-8 space-y-0.5">
+                    <button onclick="switchAlertView('Basic Strategy Verification', 'Live Casino Alerts')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-chess-knight text-brandTextLight mr-2 w-4 text-center"></i>
+                        Basic Strategy Verification
+                    </button>
+                    <button onclick="switchAlertView('Opposite Bets Alert', 'Live Casino Alerts')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-exchange-alt text-brandTextLight mr-2 w-4 text-center"></i>
+                        Opposite Bets Alert
+                    </button>
+                    <button onclick="switchAlertView('Dealer-Player Margin', 'Live Casino Alerts')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-users text-brandTextLight mr-2 w-4 text-center"></i>
+                        Dealer-Player Margin
+                    </button>
+                    <button onclick="switchAlertView('Game-Player Deviation', 'Live Casino Alerts')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-chart-line text-brandTextLight mr-2 w-4 text-center"></i>
+                        Game-Player Deviation
+                    </button>
+                    <button onclick="switchAlertView('Blackjack Card Counting', 'Live Casino Alerts')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-chess-king text-brandTextLight mr-2 w-4 text-center"></i>
+                        Blackjack Card Counting
+                    </button>
+                </div>
+
+                <!-- Engineering Tools Section -->
+                <button onclick="toggleSection(this)" class="nav-btn w-full flex items-center px-3 py-2.5 text-brandTextDark hover:bg-gray-50 rounded transition text-sm text-left font-medium">
+                    <i class="fa-solid fa-tools text-brandTextLight mr-3 w-5 text-center"></i>
+                    <span>Engineering Tools</span>
+                    <i class="fa-solid fa-chevron-down ml-auto text-xs transition-transform"></i>
+                </button>
+                <div class="subsection hidden pl-8 space-y-0.5">
+                    <button onclick="switchToolView('Multi Device / IP Analytics Node')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-network-wired text-brandTextLight mr-2 w-4 text-center"></i>
+                        Multi Device/IP
+                    </button>
+                    <button onclick="switchToolView('Winner Reporting Tool Engine')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-trophy text-brandTextLight mr-2 w-4 text-center"></i>
+                        Winner Reporting Tool
+                    </button>
+                    <button onclick="switchToolView('Roulette Table Deviation Analysis')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-circle-radiation text-brandTextLight mr-2 w-4 text-center"></i>
+                        Roulette Table Deviation
+                    </button>
+                </div>
+
+                <!-- Bonus Anomaly Check Section -->
+                <button onclick="toggleSection(this)" class="nav-btn w-full flex items-center px-3 py-2.5 text-brandTextDark hover:bg-gray-50 rounded transition text-sm text-left font-medium">
+                    <i class="fa-solid fa-gift text-brandTextLight mr-3 w-5 text-center"></i>
+                    <span>Bonus Anomaly Check</span>
+                    <i class="fa-solid fa-chevron-down ml-auto text-xs transition-transform"></i>
+                </button>
+                <div class="subsection hidden pl-8 space-y-0.5">
+                    <button onclick="switchBonusView('Abnormal Win Count')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-calculator text-brandTextLight mr-2 w-4 text-center"></i>
+                        Abnormal Win Count
+                    </button>
+                    <button onclick="switchBonusView('Abnormal Win Amount')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-money-bill-wave text-brandTextLight mr-2 w-4 text-center"></i>
+                        Abnormal Win Amount
+                    </button>
+                    <button onclick="switchBonusView('Bonus Periodical Win Sum')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-hourglass-half text-brandTextLight mr-2 w-4 text-center"></i>
+                        Bonus Periodical Win Sum
+                    </button>
+                </div>
+
+                <!-- Access Management Section -->
+                <button onclick="toggleSection(this)" class="nav-btn w-full flex items-center px-3 py-2.5 text-brandTextDark hover:bg-gray-50 rounded transition text-sm text-left font-medium">
+                    <i class="fa-solid fa-user-gear text-brandTextLight mr-3 w-5 text-center"></i>
+                    <span>Access Management</span>
+                    <i class="fa-solid fa-chevron-down ml-auto text-xs transition-transform"></i>
+                </button>
+                <div class="subsection hidden pl-8 space-y-0.5">
+                    <button onclick="switchAlertView('Create Roles', 'Access Management')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-user-shield text-brandTextLight mr-2 w-4 text-center"></i>
+                        Create Roles
+                    </button>
+                    <button onclick="switchAlertView('User Management', 'Access Management')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-users-cog text-brandTextLight mr-2 w-4 text-center"></i>
+                        User Management
+                    </button>
+                </div>
+
+                <!-- Rooty AI Assistant Section -->
+                <button onclick="toggleSection(this)" class="nav-btn w-full flex items-center px-3 py-2.5 text-brandTextDark hover:bg-gray-50 rounded transition text-sm text-left font-medium">
+                    <div class="mr-3 w-5 flex items-center justify-center shrink-0">
+                        <svg viewBox="0 0 200 240" class="w-5 h-5">
+                            <defs>
+                                <linearGradient id="navRootGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#00f2fe"/>
+                                    <stop offset="100%" stop-color="#38bdf8"/>
+                                </linearGradient>
+                            </defs>
+                            <!-- Geometric Root Emblem -->
+                            <path d="M 100 8 L 118 20 L 118 38 L 100 50 L 82 38 L 82 20 Z" fill="none" stroke="url(#navRootGlow)" stroke-width="8" stroke-linejoin="round"/>
+                            <path d="M 130 35 L 148 47 L 148 65 L 130 77 L 112 65 L 112 47 Z" fill="none" stroke="url(#navRootGlow)" stroke-width="8" stroke-linejoin="round"/>
+                            <path d="M 70 35 L 88 47 L 88 65 L 70 77 L 52 65 L 52 47 Z" fill="none" stroke="url(#navRootGlow)" stroke-width="8" stroke-linejoin="round"/>
+                            <path d="M 100 50 L 100 78 M 130 77 L 100 92 M 70 77 L 100 92" fill="none" stroke="url(#navRootGlow)" stroke-width="8" stroke-linecap="round"/>
+                            <!-- Main Cute Body -->
+                            <rect x="35" y="90" width="130" height="110" rx="38" fill="#cbd5e1"/>
+                            <!-- Visor Screen -->
+                            <rect x="50" y="105" width="100" height="70" rx="22" fill="#0f172a"/>
+                            <!-- Black Eyes with Blue Outline and White Highlights -->
+                            <circle cx="78" cy="135" r="11" fill="#000000" stroke="#38bdf8" stroke-width="2"/>
+                            <circle cx="75" cy="130" r="3.5" fill="#ffffff"/>
+                            <circle cx="122" cy="135" r="11" fill="#000000" stroke="#38bdf8" stroke-width="2"/>
+                            <circle cx="119" cy="130" r="3.5" fill="#ffffff"/>
+                            <!-- Smile -->
+                            <path d="M 90 155 Q 100 163 110 155" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <span>Rooty AI Assistant</span>
+                    <i class="fa-solid fa-chevron-down ml-auto text-xs transition-transform"></i>
+                </button>
+                <div class="subsection hidden pl-8 space-y-0.5">
+                    <button onclick="switchAlertView('AI Knowledge Base', 'Rooty AI Assistant')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-book-atlas text-brandTextLight mr-2 w-4 text-center"></i>
+                        AI Knowledge Base
+                    </button>
+                    <button onclick="switchAlertView('AI Training Center', 'Rooty AI Assistant')" class="nav-btn w-full flex items-center px-3 py-1.5 text-xs text-brandTextLight hover:bg-gray-50 hover:text-brandTextDark rounded transition text-left">
+                        <i class="fa-solid fa-graduation-cap text-brandTextLight mr-2 w-4 text-center"></i>
+                        AI Training Center
+                    </button>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Viewport -->
+        <main class="flex-1 flex flex-col overflow-hidden relative">
+            <div class="bg-white px-6 py-2.5 border-b border-gray-200 flex flex-col justify-center shadow-xs">
+                <div class="flex items-center space-x-2 text-xs text-brandTextLight">
+                    <span>Casino Risks</span>
+                    <i class="fa-solid fa-angle-right text-[10px]"></i>
+                    <span id="breadcrumb-parent" class="font-medium text-brandTextDark">Dashboards</span>
+                    <i class="fa-solid fa-angle-right text-[10px] hidden" id="breadcrumb-arrow"></i>
+                    <span id="breadcrumb-sub" class="font-medium text-[#2c3a4b] hidden">Main Grid</span>
+                </div>
+                <h1 id="view-title-heading" class="text-lg font-bold text-brandTextDark mt-0.5">Global Operational Analytics</h1>
+            </div>
+            
+            <div id="workspace-viewport" class="flex-1 p-6 overflow-y-auto">
+                <!-- Dashboard View -->
+                <div id="dashboard-view" class="view-content space-y-6">
+                    <div class="bg-white p-5 rounded border border-gray-200/90 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                        <div>
+                            <label class="block text-xs font-bold text-brandTextLight uppercase mb-1">* Partner</label>
+                            <select class="w-full bg-white border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark font-medium">
+                                <option>Select Partner</option>
+                                <option>Partner A</option>
+                                <option>Partner B</option>
+                                <option>Partner C</option>
+                                <option>Select All</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-brandTextLight uppercase mb-1">* Project</label>
+                            <select class="w-full bg-white border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark font-medium">
+                                <option>Select Project</option>
+                                <option>Project A</option>
+                                <option>Project B</option>
+                                <option>Project C</option>
+                                <option>Select All</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-brandTextLight uppercase mb-1">* Provider</label>
+                            <select class="w-full bg-white border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark font-medium">
+                                <option>Select Provider</option>
+                                <option>Provider 1</option>
+                                <option>Provider 2</option>
+                                <option>Provider 3</option>
+                                <option>Select All</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-brandTextLight uppercase mb-1">* Game Name</label>
+                            <select class="w-full bg-white border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark font-medium">
+                                <option>Select Game</option>
+                                <option>Game 1</option>
+                                <option>Game 2</option>
+                                <option>Game 3</option>
+                                <option>Select All</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-brandTextLight uppercase mb-1">* Game Type</label>
+                            <select class="w-full bg-white border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark font-medium">
+                                <option>Select Type</option>
+                                <option>Slot</option>
+                                <option>Live Casino</option>
+                                <option>Fast games</option>
+                                <option>Select All</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-brandTextLight uppercase mb-1">* Player</label>
+                            <div class="flex">
+                                <select class="bg-gray-50 border border-gray-200 border-r-0 rounded-l px-2 py-1.5 text-xs focus:outline-none text-brandTextLight"><option>ID</option><option>Username</option></select>
+                                <input type="text" placeholder="Enter Player ID..." class="w-full border border-gray-200 rounded-r px-3 py-1.5 text-xs focus:outline-none focus:border-gray-400">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-brandTextLight uppercase mb-1">* Date Range</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="date" value="2026-07-01" class="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none text-brandTextDark">
+                                <span class="text-gray-400 text-xs">to</span>
+                                <input type="date" value="2026-07-08" class="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none text-brandTextDark">
+                            </div>
+                        </div>
+                        <div class="md:col-span-4 flex justify-end space-x-2 pt-2 border-t border-gray-100">
+                            <button class="bg-white text-brandTextDark border border-gray-200 rounded px-4 py-1.5 text-xs font-medium hover:bg-gray-50 transition">Reset</button>
+                            <button class="bg-brandTeal hover:bg-brandTealHover text-white rounded px-5 py-1.5 text-xs font-medium transition shadow-xs">Generate</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded border border-gray-200/90 shadow-sm">
+                            <div class="flex justify-between items-start text-brandTextLight"><span class="text-xs font-bold uppercase tracking-wider">Total Active Bets</span><i class="fa-solid fa-gamepad text-brandTextLight"></i></div>
+                            <p class="text-3xl font-bold text-brandTextDark mt-3">1,248,910</p>
+                            <span class="text-xs text-emerald-600 font-medium"><i class="fa-solid fa-arrow-trend-up"></i> +4.2%</span>
+                        </div>
+                        <div class="bg-white p-6 rounded border border-gray-200/90 shadow-sm">
+                            <div class="flex justify-between items-start text-brandTextLight"><span class="text-xs font-bold uppercase tracking-wider">GGR Turnover</span><i class="fa-solid fa-coins text-brandTextLight"></i></div>
+                            <p class="text-3xl font-bold text-brandTextDark mt-3">€412,050.00</p>
+                            <span class="text-xs text-emerald-600 font-medium"><i class="fa-solid fa-arrow-trend-up"></i> +12.8%</span>
+                        </div>
+                        <div class="bg-white p-6 rounded border border-gray-200/90 shadow-sm">
+                            <div class="flex justify-between items-start text-brandTextLight"><span class="text-xs font-bold uppercase tracking-wider">Active Risk Triggers</span><i class="fa-solid fa-circle-exclamation text-brandTextLight"></i></div>
+                            <p class="text-3xl font-bold text-brandTextDark mt-3">42 Unresolved</p>
+                            <span class="text-xs text-amber-600 font-medium"><i class="fa-solid fa-triangle-exclamation"></i> Action Required</span>
+                        </div>
+                        <div class="bg-white p-6 rounded border border-gray-200/90 shadow-sm">
+                            <div class="flex justify-between items-start text-brandTextLight"><span class="text-xs font-bold uppercase tracking-wider">System Stability Node</span><i class="fa-solid fa-server text-brandTextLight"></i></div>
+                            <p class="text-3xl font-bold text-brandTextDark mt-3">99.98 %</p>
+                            <span class="text-xs text-brandTextLight font-mono">Sync Delay: 12ms</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Player Insights View -->
+                <div id="player-insights-view" class="view-content hidden flex flex-col lg:flex-row gap-6 h-full items-start">
+                    <div class="flex-1 w-full space-y-4">
+                        <div class="bg-white p-4 rounded border border-gray-200/90 shadow-sm flex items-center justify-between">
+                            <div class="w-72">
+                                <label class="block text-xs font-bold text-brandTextLight uppercase mb-1">* Player</label>
+                                <div class="flex">
+                                    <select class="bg-gray-50 border border-gray-200 border-r-0 rounded-l px-2 py-1.5 text-xs focus:outline-none text-brandTextLight"><option>ID</option><option>Username</option></select>
+                                    <input type="text" placeholder="Enter Player ID..." class="w-full border border-gray-200 rounded-r px-3 py-1.5 text-xs focus:outline-none focus:border-gray-400">
+                                </div>
+                            </div>
+                            <div class="flex space-x-2 pt-4">
+                                <button class="bg-white text-brandTextDark border border-gray-200 rounded px-4 py-1.5 text-xs font-medium hover:bg-gray-50 transition">Reset</button>
+                                <button class="bg-brandTeal hover:bg-brandTealHover text-white rounded px-5 py-1.5 text-xs font-medium transition shadow-xs">Search</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white border border-gray-200/90 rounded p-1 px-4 flex items-center justify-between shadow-sm">
+                            <div class="flex space-x-6 text-xs font-semibold text-brandTextLight">
+                                <button onclick="switchPlayerTab(0)" class="player-tab py-3 border-b-2 border-brandTeal text-brandTextDark font-bold">Player Overview</button>
+                                <button onclick="switchPlayerTab(1)" class="player-tab py-3 border-b-2 border-transparent hover:text-brandTextDark">Player Trends</button>
+                                <button onclick="switchPlayerTab(2)" class="player-tab py-3 border-b-2 border-transparent hover:text-brandTextDark">Game Statistics</button>
+                                <button onclick="switchPlayerTab(3)" class="player-tab py-3 border-b-2 border-transparent hover:text-brandTextDark">Daily Statistics</button>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="openWidgetSidebar()" class="bg-brandTeal hover:bg-brandTealHover text-white text-xs px-3 py-1.5 rounded flex items-center transition shadow-xs font-medium">
+                                    <i class="fa-solid fa-plus mr-1"></i> Add Workspace Widget
+                                </button>
+                            </div>
+                        </div>
+                        <div id="player-content-area" class="min-h-[400px]">
+                            <div id="player-overview-content">
+                                <div id="dashboard-widgets-canvas" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="bg-white p-5 rounded border border-gray-200/90 shadow-sm relative group" id="widget-ggr-card">
+                                        <div class="flex justify-between items-center pb-2 border-b border-gray-100">
+                                            <h4 class="text-xs font-bold text-brandTextDark flex items-center"><i class="fa-solid fa-chart-bar mr-1.5 text-brandTextLight"></i> GGR Analytics Widget <span class="ml-1 text-[10px] text-brandTextLight font-normal opacity-80">[Bar Chart]</span></h4>
+                                            <div class="flex space-x-1.5 opacity-60 group-hover:opacity-100 transition">
+                                                <button onclick="editWidgetModal(this)" class="text-brandTextLight hover:text-brandTextDark text-xs"><i class="fa-solid fa-pen"></i></button>
+                                                <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-brandTextLight hover:text-red-600 text-xs"><i class="fa-solid fa-trash"></i></button>
+                                            </div>
+                                        </div>
+                                        <div class="py-4 flex justify-between items-end h-32">
+                                            <div class="w-1/3 text-left">
+                                                <p class="text-[10px] text-brandTextLight uppercase tracking-wide">Aggregate GGR</p>
+                                                <p class="text-xl font-bold text-brandTextDark">€14,820</p>
+                                                <span class="text-[10px] bg-gray-100 text-brandTextDark border border-gray-200 px-1.5 py-0.5 rounded font-semibold">Casino Node</span>
+                                            </div>
+                                            <div class="widget-viz-slot flex-1 flex items-end justify-end h-full pt-4">
+                                                <div class="flex items-end justify-center space-x-2 h-full w-full">
+                                                    <div class="w-4 bg-gray-400 rounded-t h-[40%]"></div>
+                                                    <div class="w-4 bg-slate-500 rounded-t h-[60%]"></div>
+                                                    <div class="w-4 bg-slate-300 rounded-t h-[75%]"></div>
+                                                    <div class="w-4 bg-[#2c3a4b] rounded-t h-[90%]"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="other-player-content" class="hidden flex items-center justify-center h-[400px] text-brandTextLight">
+                                <div class="text-center">
+                                    <i class="fa-solid fa-cog text-6xl mb-4"></i>
+                                    <p class="text-xl">Configuration Panel</p>
+                                    <p class="text-sm mt-2">Select options from sidebar to configure</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border border-gray-200 rounded p-6 bg-white shadow-sm flex items-start space-x-4">
+                            <div class="w-5 h-5 mt-0.5 rounded-full border border-brandTextDark flex items-center justify-center text-xs text-brandTextDark shrink-0">
+                                <i class="fa-solid fa-shield-halved text-[10px]"></i>
+                            </div>
+                            <div class="text-left">
+                                <p class="text-sm font-semibold text-brandTextDark">Tailor Personal Analytics Viewports</p>
+                                <p class="text-xs text-brandTextLight mt-1 leading-relaxed">Root is an institutional-grade Risk Management engine designed explicitly for digital casinos and iGaming platforms. Drag or select telemetry configuration cards from the widget controller module to design customized risk verification grids.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="widget-control-sidebar" class="w-full lg:w-72 bg-white rounded border border-gray-200 p-4 shadow-sm hidden">
+                        <div class="flex justify-between items-center pb-3 border-b border-gray-100 mb-4">
+                            <span class="text-sm font-bold text-brandTextDark flex items-center"><i class="fa-solid fa-sliders mr-1.5 text-brandTextLight"></i> Widgets Control</span>
+                            <button onclick="closeWidgetSidebar()" class="text-brandTextLight hover:text-brandTextDark"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <button onclick="openWidgetWizardModal()" class="w-full bg-brandTeal hover:bg-brandTealHover text-white text-xs font-semibold py-2 rounded mb-4 transition text-center flex items-center justify-center shadow-xs">
+                            <i class="fa-solid fa-plus-circle mr-1.5"></i> Create New Analytics Tile
+                        </button>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-brandTextLight uppercase tracking-wider block">Available Preset Blocks</label>
+                            <div class="p-2.5 bg-gray-50 rounded border border-gray-200 flex justify-between items-center text-xs text-brandTextDark font-semibold">
+                                <span class="flex items-center"><i class="fa-solid fa-chart-bar text-brandTextLight mr-2"></i> GGR Matrix Module</span>
+                                <button onclick="addNewWidgetToCanvas('GGR Turnover Module', 'Betting Matrix', 'Bar Chart')" class="text-brandTextDark hover:text-black font-bold text-base"><i class="fa-solid fa-square-plus"></i></button>
+                            </div>
+                            <div class="p-2.5 bg-gray-50 rounded border border-gray-200 flex justify-between items-center text-xs text-brandTextDark font-semibold">
+                                <span class="flex items-center"><i class="fa-solid fa-chart-line text-brandTextLight mr-2"></i> Z-Score Divergence</span>
+                                <button onclick="addNewWidgetToCanvas('Z-Score Engine Alert', 'Statistical Anomalies', 'Line Spline')" class="text-brandTextDark hover:text-black font-bold text-base"><i class="fa-solid fa-square-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Anomaly Detection View -->
+                <div id="ai-anomaly-view" class="view-content hidden space-y-4">
+                    <div class="bg-white border border-gray-200/90 rounded p-1 px-4 flex items-center justify-between shadow-sm">
+                        <div class="flex space-x-6 text-xs font-semibold text-brandTextLight">
+                            <button onclick="switchAiTab('rules')" id="ai-tab-rules" class="ai-tab py-3 border-b-2 border-brandTeal text-brandTextDark font-bold">Rules</button>
+                            <button onclick="switchAiTab('history')" id="ai-tab-history" class="ai-tab py-3 border-b-2 border-transparent hover:text-brandTextDark">History</button>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="toggleAddRulePanel()" class="bg-brandTeal hover:bg-brandTealHover text-white text-xs px-3 py-1.5 rounded flex items-center transition shadow-xs font-medium">
+                                <i class="fa-solid fa-plus mr-1"></i> Add Rule
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="ai-rules-content" class="space-y-4">
+                        <div class="bg-white p-5 rounded border border-gray-200/90 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            <div>
+                                <label class="block text-xs font-bold text-brandTextLight uppercase mb-1">* Partner Name</label>
+                                <select class="w-full bg-white border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark font-medium">
+                                    <option>Select Partner</option>
+                                    <option>Partner A</option>
+                                    <option>Partner B</option>
+                                    <option>Partner C</option>
+                                    <option>Select All</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-brandTextLight uppercase mb-1">* Project Name</label>
+                                <select class="w-full bg-white border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark font-medium">
+                                    <option>Select Project</option>
+                                    <option>Project A</option>
+                                    <option>Project B</option>
+                                    <option>Project C</option> 
+                                    <option>Select All</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-brandTextLight uppercase mb-1">* Date Range</label>
+                                <div class="flex items-center space-x-2">
+                                    <input type="date" value="2026-07-27" class="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none text-brandTextDark">
+                                    <span class="text-gray-400 text-xs">to</span>
+                                    <input type="date" value="2026-07-28" class="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none text-brandTextDark">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-brandTextLight uppercase mb-1">* Player</label>
+                                <div class="flex">
+                                    <select class="bg-gray-50 border border-gray-200 border-r-0 rounded-l px-2 py-1.5 text-xs focus:outline-none text-brandTextLight"><option>ID</option><option>Username</option></select>
+                                    <input type="text" placeholder="Enter Player ID..." class="w-full border border-gray-200 rounded-r px-3 py-1.5 text-xs focus:outline-none focus:border-gray-400">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-brandTextLight uppercase mb-1">* Rule Type</label>
+                                <select class="w-full bg-white border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark font-medium">
+                                    <option>Select Rule Type</option>
+                                    <option>Bet Velocity</option>
+                                    <option>Win Spikes</option>
+                                    <option>Bet Ramping</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-3 flex justify-end space-x-2 pt-2 border-t border-gray-100">
+                                <button class="bg-white text-brandTextDark border border-gray-200 rounded px-4 py-1.5 text-xs font-medium hover:bg-gray-50 transition">Reset</button>
+                                <button class="bg-brandTeal hover:bg-brandTealHover text-white rounded px-5 py-1.5 text-xs font-medium transition shadow-xs">Generate</button>
+                            </div>
+                        </div>
+
+                        <div id="add-rule-panel" class="hidden bg-white p-5 rounded border border-gray-200/90 shadow-sm space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="border border-gray-200/80 rounded p-4 space-y-3 bg-white">
+                                    <h3 class="text-xs font-bold text-brandTextDark uppercase tracking-wider">Condition Set Up</h3>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-brandTextLight uppercase mb-1">* Partner Name</label>
+                                            <select class="w-full bg-white border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark">
+                                                <option>Select Partner</option>
+                                                <option>TotoGaming</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-brandTextLight uppercase mb-1">* Rule Name</label>
+                                            <input type="text" placeholder="Type rule name..." class="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-brandTextLight uppercase mb-1">* Activity Type</label>
+                                            <select class="w-full bg-white border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark">
+                                                <option>Select Type</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-brandTextLight uppercase mb-1">* Min Amount <i class="fa-regular fa-circle-question text-brandTextLight text-[10px]"></i></label>
+                                            <input type="text" placeholder="Type amount..." class="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="border border-gray-200/80 rounded p-4 space-y-3 bg-white">
+                                    <h3 class="text-xs font-bold text-brandTextDark uppercase tracking-wider">Recipients & Message</h3>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-brandTextLight uppercase mb-1">* Emailing List</label>
+                                        <input type="text" placeholder="Type emails..." class="w-full border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark">
+                                    </div>
+                                    <div class="bg-gray-50 border border-gray-200/60 rounded p-3 text-[11px] text-brandTextLight mt-2 leading-relaxed">
+                                        To view the message that will be sent to administrators, please check the Messages section.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="border border-gray-200/80 rounded p-4 space-y-3 bg-white">
+                                <h3 class="text-xs font-bold text-brandTextDark uppercase tracking-wider">Player Audience</h3>
+                                <div class="flex items-center space-x-4">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-brandTextLight uppercase mb-1">* Player Upload Type</label>
+                                        <select class="border border-gray-200 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark min-w-[200px] bg-white">
+                                            <option>Upload CSV</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-brandTextLight uppercase mb-1">* Players List</label>
+                                        <button class="bg-white border border-gray-200 text-brandTextDark hover:bg-gray-50 font-medium px-4 py-1.5 rounded text-xs flex items-center transition shadow-2xs">
+                                            <i class="fa-solid fa-arrow-up-from-bracket mr-1.5 text-[11px]"></i> Click to Upload
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 border border-gray-200/60 rounded p-3 text-xs text-brandTextLight flex items-center space-x-2">
+                                <i class="fa-solid fa-circle-info text-brandTextDark text-xs"></i>
+                                <span>If Activity Type = - and Min Amount = -, a notification will be triggered when a player's total amount exceeds threshold.</span>
+                            </div>
+
+                            <div class="flex justify-end space-x-2 pt-2 border-t border-gray-100">
+                                <button onclick="toggleAddRulePanel()" class="bg-white text-brandTextDark border border-gray-200 rounded px-4 py-1.5 text-xs font-medium hover:bg-gray-50 transition">Cancel</button>
+                                <button class="bg-brandTeal hover:bg-brandTealHover text-white rounded px-5 py-1.5 text-xs font-medium transition shadow-xs">Save</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white border border-gray-200/90 rounded overflow-hidden shadow-sm">
+                            <div class="grid grid-cols-9 bg-gray-50 px-4 py-2.5 text-xs font-bold text-brandTextDark border-b border-gray-200 text-left uppercase tracking-wider">
+                                <div>Rule ID</div>
+                                <div>Partner ID</div>
+                                <div>Rule Name</div>
+                                <div>Created Date</div>
+                                <div>Last Updated Date</div>
+                                <div>Created By</div>
+                                <div>Actions</div>
+                                <div>Activity</div>
+                                <div>State</div>
+                            </div>
+                            <div class="p-12 flex flex-col items-center justify-center text-center">
+                                <div class="w-16 h-16 bg-gray-50 rounded-lg flex flex-col items-center justify-center mb-2 border border-gray-200/80 relative">
+                                    <i class="fa-regular fa-file-lines text-2xl text-gray-300"></i>
+                                    <div class="absolute -top-2 -right-2 bg-white border border-gray-200 rounded-full px-1 py-0.5 text-[8px] text-gray-400">•••</div>
+                                </div>
+                                <span class="text-xs text-brandTextLight font-medium">No Data</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="ai-history-content" class="hidden bg-white border border-gray-200/90 rounded p-12 text-center text-brandTextLight text-xs shadow-sm">
+                        No AI Anomaly History Logs Recorded.
+                    </div>
+                </div>
+
+                <div id="alert-config-view" class="view-content hidden flex items-center justify-center h-full text-brandTextLight">
+                    <div class="text-center">
+                        <i class="fa-solid fa-cog text-6xl mb-4"></i>
+                        <p class="text-xl">Configuration Panel</p>
+                        <p class="text-sm mt-2">Select options from sidebar to configure</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Advanced Player Filter Selection Panel -->
+    <div id="player-filter-modal" class="fixed inset-0 bg-slate-900/30 flex justify-end z-50 hidden backdrop-blur-[1px] transition-all">
+        <div class="bg-white w-80 h-full shadow-2xl border-l border-gray-200 p-5 overflow-y-auto flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between pb-3 border-b border-gray-200 mb-4">
+                    <h2 class="text-sm font-bold text-slate-800">Player</h2>
+                    <button onclick="togglePlayerFilterModal()" class="text-gray-400 hover:text-slate-700 transition"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
+
+                <div class="space-y-2.5">
+                    <div class="flex items-center space-x-2">
+                        <input type="text" placeholder="Player ID" class="w-full border border-gray-200 rounded px-3 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-slate-400">
+                        <span class="text-gray-300 hover:text-gray-500 cursor-grab text-sm select-none">⋮⋮</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <div class="flex w-full border border-gray-200 rounded overflow-hidden">
+                            <select class="bg-gray-50 border-r border-gray-200 text-xs px-1.5 py-1.5 text-slate-500 focus:outline-none appearance-none cursor-pointer">
+                                <option>∋</option>
+                                <option>=</option>
+                            </select>
+                            <input type="text" placeholder="Username" class="w-full px-2.5 py-1.5 text-xs text-slate-600 focus:outline-none">
+                        </div>
+                        <span class="text-gray-300 hover:text-gray-500 cursor-grab text-sm select-none">⋮⋮</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="text" placeholder="Unique ID" class="w-full border border-gray-200 rounded px-3 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-slate-400">
+                        <span class="text-gray-300 hover:text-gray-500 cursor-grab text-sm select-none">⋮⋮</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="text" placeholder="Relum ID" class="w-full border border-gray-200 rounded px-3 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-slate-400">
+                        <span class="text-gray-300 hover:text-gray-500 cursor-grab text-sm select-none">⋮⋮</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="text" placeholder="First Name" class="w-full border border-gray-200 rounded px-3 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-slate-400">
+                        <span class="text-gray-300 hover:text-gray-500 cursor-grab text-sm select-none">⋮⋮</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="text" placeholder="Last Name" class="w-full border border-gray-200 rounded px-3 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-slate-400">
+                        <span class="text-gray-300 hover:text-gray-500 cursor-grab text-sm select-none">⋮⋮</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <div class="flex w-full border border-gray-200 rounded overflow-hidden">
+                            <select class="bg-gray-50 border-r border-gray-200 text-xs px-1.5 py-1.5 text-slate-500 focus:outline-none appearance-none cursor-pointer">
+                                <option>=</option>
+                                <option>∋</option>
+                            </select>
+                            <input type="text" placeholder="Email" class="w-full px-2.5 py-1.5 text-xs text-slate-600 focus:outline-none">
+                        </div>
+                        <span class="text-gray-300 hover:text-gray-500 cursor-grab text-sm select-none">⋮⋮</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <div class="flex w-full border border-gray-200 rounded overflow-hidden">
+                            <select class="bg-gray-50 border-r border-gray-200 text-xs px-2 py-1.5 text-slate-500 focus:outline-none appearance-none cursor-pointer">
+                                <option>˅</option>
+                            </select>
+                            <input type="text" placeholder="Phone Number" class="w-full px-2.5 py-1.5 text-xs text-slate-600 focus:outline-none">
+                        </div>
+                        <span class="text-gray-300 hover:text-gray-500 cursor-grab text-sm select-none">⋮⋮</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="text" placeholder="Social Number" class="w-full border border-gray-200 rounded px-3 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-slate-400">
+                        <span class="text-gray-300 hover:text-gray-500 cursor-grab text-sm select-none">⋮⋮</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="text" placeholder="Document Number" class="w-full border border-gray-200 rounded px-3 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-slate-400">
+                        <span class="text-gray-300 hover:text-gray-500 cursor-grab text-sm select-none">⋮⋮</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="text" placeholder="Reg. IP" class="w-full border border-gray-200 rounded px-3 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-slate-400">
+                        <span class="text-gray-300 hover:text-gray-500 cursor-grab text-sm select-none">⋮⋮</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="text" placeholder="IP Address" class="w-full border border-gray-200 rounded px-3 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-slate-400">
+                        <span class="text-gray-300 hover:text-gray-500 cursor-grab text-sm select-none">⋮⋮</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="text" placeholder="Player Bonus ID" class="w-full border border-gray-200 rounded px-3 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-slate-400">
+                        <span class="text-gray-300 hover:text-gray-500 cursor-grab text-sm select-none">⋮⋮</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-100 flex justify-end space-x-2">
+                <button onclick="togglePlayerFilterModal()" class="bg-white border border-gray-200 text-brandTextDark px-3 py-1.5 rounded text-xs hover:bg-gray-50">Cancel</button>
+                <button onclick="togglePlayerFilterModal()" class="bg-brandTeal hover:bg-brandTealHover text-white px-4 py-1.5 rounded text-xs font-semibold shadow-xs">Apply Filters</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Widget Creation -->
+    <div id="widget-wizard-modal" class="fixed inset-0 bg-slate-900/40 flex items-center justify-center z-50 hidden backdrop-blur-xs">
+        <div class="bg-white rounded shadow-xl border border-gray-200 max-w-2xl w-full mx-4 overflow-hidden flex flex-col md:flex-row">
+            <div class="p-6 flex-1 space-y-4 border-r border-gray-100">
+                <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                    <h3 class="text-sm font-bold text-brandTextDark">Edit Widget Components</h3>
+                    <button onclick="closeWidgetWizardModal()" class="text-brandTextLight hover:text-brandTextDark md:hidden"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-brandTextLight uppercase tracking-wide mb-1">Widget Name *</label>
+                    <input type="text" id="wizard-widget-name" value="GGR" class="w-full border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark font-medium">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-brandTextLight uppercase tracking-wide mb-1">Category *</label>
+                    <select id="wizard-widget-cat" class="w-full bg-white border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark font-medium">
+                        <option>Betting</option>
+                        <option>Risk Mitigation</option>
+                        <option>Bonus Audit Matrix</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-brandTextLight uppercase tracking-wide mb-1">Telemetry Metrics Data Type *</label>
+                    <select class="w-full bg-white border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark font-medium">
+                        <option>GGR (Gross Gaming Revenue)</option>
+                        <option>NGR (Net Gaming Revenue)</option>
+                        <option>Z-Score Outlier Ratio</option>
+                        <option>Turnover Threshold Index</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-brandTextLight uppercase tracking-wide mb-1">Period *</label>
+                    <select class="w-full bg-white border border-gray-200 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-gray-400 text-brandTextDark font-medium">
+                        <option>Today (Live Stream Node)</option>
+                        <option>Rolling 7-Day Window Block</option>
+                        <option>Custom Epoch Cluster</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-6 pt-1 text-xs">
+                    <label class="flex items-center text-brandTextDark font-semibold"><input type="radio" name="valtype" checked class="text-brandTextDark mr-1.5"> Amount</label>
+                    <label class="flex items-center text-brandTextDark font-semibold"><input type="radio" name="valtype" class="text-brandTextDark mr-1.5"> Count Matrix</label>
+                </div>
+                <div class="flex items-center space-x-6 pt-1 text-xs">
+                    <label class="flex items-center text-brandTextDark font-semibold"><input type="checkbox" checked class="rounded text-brandTextDark mr-1.5"> Casino Node</label>
+                    <label class="flex items-center text-brandTextDark font-semibold"><input type="checkbox" class="rounded text-brandTextDark mr-1.5"> Sportbook Engine</label>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-50 w-full md:w-80 flex flex-col justify-between">
+                <div class="flex justify-between items-center border-b border-gray-200 pb-2 mb-4">
+                    <span class="text-xs font-bold text-brandTextLight uppercase tracking-wider">Dynamic Graphical Preview</span>
+                    <button onclick="closeWidgetWizardModal()" class="text-brandTextLight hover:text-brandTextDark"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="flex space-x-2 mb-4">
+                    <button onclick="selectChartType(0)" id="chart-btn-line" class="p-2 bg-white rounded border border-gray-200 text-brandTextLight hover:text-brandTextDark transition"><i class="fa-solid fa-chart-line"></i></button>
+                    <button onclick="selectChartType(1)" id="chart-btn-bar" class="p-2 bg-white rounded border border-brandTextDark text-brandTextDark transition shadow-xs"><i class="fa-solid fa-chart-bar"></i></button>
+                    <button onclick="selectChartType(2)" id="chart-btn-pie" class="p-2 bg-white rounded border border-gray-200 text-brandTextLight hover:text-brandTextDark transition"><i class="fa-solid fa-chart-pie"></i></button>
+                </div>
+                <div id="preview-container" class="bg-white p-4 rounded border border-gray-200 flex-1 flex items-end justify-center space-x-3 h-32 relative chart-preview">
+                    <div id="preview-content" class="w-full h-full flex items-end justify-center">
+                        <div class="flex items-end justify-center space-x-3 h-32"><div class="w-4 bg-gray-400 h-[35%] rounded-t"></div><div class="w-4 bg-slate-500 h-[65%] rounded-t"></div><div class="w-4 bg-slate-300 h-[80%] rounded-t"></div><div class="w-4 bg-[#2c3a4b] h-[50%] rounded-t"></div></div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-2">
+                    <button onclick="closeWidgetWizardModal()" class="bg-white border border-gray-200 text-brandTextDark px-4 py-1.5 rounded text-xs font-medium transition">Cancel</button>
+                    <button onclick="saveWizardWidgetToWorkspace()" class="bg-brandTeal hover:bg-brandTealHover text-white px-5 py-1.5 rounded text-xs font-semibold transition shadow-sm">Compile Tile</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROOTY AI CHATBOT WIDGET WITH CHATBASE IFRAME -->
+    <div id="rooty-bot-container" class="fixed bottom-6 right-6 z-50 flex flex-col items-start select-none">
+        
+        <!-- Interactive AI Chat Panel -->
+        <div id="rooty-chat-window" class="hidden absolute w-80 md:w-[400px] h-[600px] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 ease-in-out opacity-0 scale-95 z-50">
+            <!-- Header Banner -->
+            <div class="bg-slate-800 border-b border-slate-700 px-4 py-3 text-white flex items-center justify-between shadow-xs">
+                <div class="text-left">
+                    <h3 class="text-xs font-bold tracking-wide text-white">Rooty Assistant</h3>
+                    <p class="text-[10px] text-emerald-400 flex items-center gap-1 font-mono mt-0.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Online
+                    </p>
+                </div>
+                <button onclick="toggleRootyChat()" class="text-slate-400 hover:text-white p-1 rounded transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Chatbase Embedded Iframe Container -->
+            <div class="flex-1 w-full h-full bg-white">
+                <iframe
+                    src="https://www.chatbase.co/chatbot-iframe/SMjSP4EHG7_WPSkKnh7Zl"
+                    width="100%"
+                    height="100%"
+                    style="height: 100%; border: none;"
+                    frameborder="0"
+                    allow="microphone"
+                ></iframe>
+            </div>
+        </div>
+
+        <!-- Bot Avatar Button -->
+        <button id="rooty-bot-button" title="Chat with Rooty AI" class="interactive-logo-card group relative w-[150px] h-[150px] cursor-grab active:cursor-grabbing focus:outline-none drop-shadow-xl flex items-center justify-center rounded-full">
+            <svg viewBox="0 0 200 280" class="w-full h-full filter drop-shadow-md overflow-visible">
+                <defs>
+                    <linearGradient id="rootGlowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#00f2fe"/>
+                        <stop offset="50%" stop-color="#4facfe"/>
+                        <stop offset="100%" stop-color="#8a2be2"/>
+                    </linearGradient>
+                    <radialGradient id="bodyShading" cx="30%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#ffffff"/>
+                        <stop offset="70%" stop-color="#f1f5f9"/>
+                        <stop offset="100%" stop-color="#cbd5e1"/>
+                    </radialGradient>
+                    <linearGradient id="lightningGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#00f2fe"/>
+                        <stop offset="50%" stop-color="#38bdf8"/>
+                        <stop offset="100%" stop-color="#8a2be2"/>
+                    </linearGradient>
+                </defs>
+
+                <!-- LIGHTNING THRUSTERS (ACTIVATED ON DRAG) -->
+                <g id="bot-lightning-group" class="hidden bot-lightning">
+                    <path d="M 100 215 L 90 235 L 102 245 L 88 275 L 112 248 L 98 238 L 108 215 Z" fill="url(#lightningGlow)" filter="drop-shadow(0px 0px 8px #00f2fe)"/>
+                    <path d="M 78 215 L 68 232 L 78 240 L 62 265 L 82 242 L 72 235 L 82 215 Z" fill="url(#lightningGlow)" opacity="0.8" filter="drop-shadow(0px 0px 6px #38bdf8)"/>
+                    <path d="M 122 215 L 112 232 L 122 240 L 106 265 L 126 242 L 116 235 L 126 215 Z" fill="url(#lightningGlow)" opacity="0.8" filter="drop-shadow(0px 0px 6px #38bdf8)"/>
+                    <path d="M 55 210 L 45 228 L 52 232 L 40 250 L 58 234 L 50 228 Z" fill="#00f2fe" opacity="0.9"/>
+                    <path d="M 145 210 L 155 228 L 148 232 L 160 250 L 142 234 L 150 228 Z" fill="#00f2fe" opacity="0.9"/>
+                </g>
+
+                <!-- TOP GEOMETRIC ROOT EMBLEM -->
+                <g class="transform transition-transform duration-300 group-hover:translate-y-[-2px]">
+                    <path d="M 100 8 L 118 20 L 118 38 L 100 50 L 82 38 L 82 20 Z" fill="none" stroke="url(#rootGlowGrad)" stroke-width="5" stroke-linejoin="round"/>
+                    <path d="M 130 35 L 148 47 L 148 65 L 130 77 L 112 65 L 112 47 Z" fill="none" stroke="url(#rootGlowGrad)" stroke-width="5" stroke-linejoin="round"/>
+                    <path d="M 70 35 L 88 47 L 88 65 L 70 77 L 52 65 L 52 47 Z" fill="none" stroke="url(#rootGlowGrad)" stroke-width="5" stroke-linejoin="round"/>
+                    <path d="M 100 50 L 100 78 M 130 77 L 100 92 M 70 77 L 100 92" fill="none" stroke="url(#rootGlowGrad)" stroke-width="5" stroke-linecap="round"/>
+                </g>
+
+                <!-- Base Dark Leaf Stem -->
+                <path d="M 100 88 C 92 88, 80 82, 70 75 C 82 92, 92 98, 100 110 C 108 98, 118 92, 130 75 C 120 82, 108 88, 100 88 Z" fill="#475569"/>
+
+                <!-- Bot Feet -->
+                <ellipse cx="78" cy="212" rx="18" ry="10" fill="#94a3b8"/>
+                <ellipse cx="122" cy="212" rx="18" ry="10" fill="#94a3b8"/>
+
+                <!-- Bot Arms -->
+                <ellipse cx="44" cy="165" rx="11" ry="24" fill="url(#bodyShading)" transform="rotate(18, 44, 165)"/>
+                <ellipse cx="156" cy="165" rx="11" ry="24" fill="url(#bodyShading)" transform="rotate(-18, 156, 165)"/>
+
+                <!-- Main Cute Body -->
+                <rect x="35" y="102" width="130" height="106" rx="42" fill="url(#bodyShading)"/>
+
+                <!-- Side Ear Caps -->
+                <rect x="28" y="122" width="12" height="30" rx="6" fill="#94a3b8"/>
+                <rect x="160" y="122" width="12" height="30" rx="6" fill="#94a3b8"/>
+
+                <!-- Dark Visor Screen -->
+                <rect x="50" y="118" width="100" height="70" rx="24" fill="#0f172a"/>
+                <rect x="52" y="120" width="96" height="66" rx="22" fill="#1e293b"/>
+
+                <!-- Eyes (Black fill, Blue stroke outline, White highlight rounds) -->
+                <g id="bot-normal-eyes" class="bot-eye">
+                    <!-- Left Eye -->
+                    <ellipse cx="78" cy="148" rx="12" ry="14" fill="#000000" stroke="#38bdf8" stroke-width="2"/>
+                    <circle cx="74" cy="142" r="4" fill="#ffffff"/>
+                    <circle cx="82" cy="151" r="1.8" fill="#ffffff"/>
+
+                    <!-- Right Eye -->
+                    <ellipse cx="122" cy="148" rx="12" ry="14" fill="#000000" stroke="#38bdf8" stroke-width="2"/>
+                    <circle cx="118" cy="142" r="4" fill="#ffffff"/>
+                    <circle cx="126" cy="151" r="1.8" fill="#ffffff"/>
+                </g>
+
+                <!-- CLOSED EYES (DISPLAYED DURING DRAGGING) -->
+                <g id="bot-closed-eyes" class="hidden">
+                    <path d="M 66 150 Q 78 162 90 150" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M 110 150 Q 122 162 134 150" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+                </g>
+
+                <!-- Friendly Glowing Mouth -->
+                <path d="M 90 166 Q 100 175 110 166" fill="none" stroke="#38bdf8" stroke-width="3.5" stroke-linecap="round"/>
+            </svg>
+        </button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('plexus-canvas');
+        const ctx = canvas.getContext('2d');
+        let particlesArray = [];
+        const numberOfParticles = 55;
+        function initCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        initCanvas();
+        window.addEventListener('resize', initCanvas);
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 1.5;
+                this.speedX = (Math.random() * 0.4) - 0.2;
+                this.speedY = (Math.random() * 0.4) - 0.2;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x > canvas.width || this.x < 0) this.speedX = -this.speedX;
+                if (this.y > canvas.height || this.y < 0) this.speedY = -this.speedY;
+            }
+            draw() {
+                ctx.fillStyle = '#64748b';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        function populateParticles() {
+            particlesArray = [];
+            for (let i = 0; i < numberOfParticles; i++) {
+                particlesArray.push(new Particle());
+            }
+        }
+        populateParticles();
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+                particlesArray[i].draw();
+            }
+            for (let a = 0; a < particlesArray.length; a++) {
+                for (let b = a; b < particlesArray.length; b++) {
+                    let dx = particlesArray[a].x - particlesArray[b].x;
+                    let dy = particlesArray[a].y - particlesArray[b].y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < 130) {
+                        let opacity = (1 - (distance / 130)) * 0.18;
+                        ctx.strokeStyle = `rgba(100, 116, 139, ${opacity})`;
+                        ctx.lineWidth = 0.8;
+                        ctx.beginPath();
+                        ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
+                        ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        function togglePlayerFilterModal() {
+            const modal = document.getElementById('player-filter-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function updateLanguageState(langCode) {
+            document.getElementById('active-lang-label').innerText = langCode;
+        }
+
+        setInterval(() => {
+            const date = new Date();
+            const format = (n) => String(n).padStart(2, '0');
+            document.getElementById('live-clock').innerText = `${format(date.getDate())}.${format(date.getMonth()+1)}.${date.getFullYear()} ${format(date.getHours())}:${format(date.getMinutes())}:${format(date.getSeconds())}`;
+        }, 1000);
+
+        function switchView(viewId) {
+            document.querySelectorAll('.view-content').forEach(view => view.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-gray-100', 'text-black', 'border-l-4', 'border-[#2c3a4b]', 'font-bold');
+                btn.classList.add('text-brandTextLight');
+            });
+            const targetingView = document.getElementById(viewId);
+            if(targetingView) targetingView.classList.remove('hidden');
+            const actingSidebarButton = document.getElementById(`btn-${viewId}`);
+            if(actingSidebarButton) {
+                actingSidebarButton.classList.add('bg-gray-100', 'text-black', 'border-l-4', 'border-[#2c3a4b]', 'font-bold');
+            }
+            const parentCrumb = document.getElementById('breadcrumb-parent');
+            const subCrumb = document.getElementById('breadcrumb-sub');
+            const arrowCrumb = document.getElementById('breadcrumb-arrow');
+            const titleHeading = document.getElementById('view-title-heading');
+            if (viewId === 'dashboard-view') {
+                parentCrumb.innerText = 'Dashboards';
+                subCrumb.classList.add('hidden');
+                arrowCrumb.classList.add('hidden');
+                titleHeading.innerText = 'Global Operational Analytics';
+            } else if (viewId === 'player-insights-view') {
+                parentCrumb.innerText = 'Player Insights';
+                subCrumb.classList.remove('hidden');
+                arrowCrumb.classList.remove('hidden');
+                subCrumb.innerText = 'Dynamic Dashboard Workbench';
+                titleHeading.innerText = 'Custom Risk Telemetry Suite';
+                switchPlayerTab(0);
+            }
+        }
+
+        function openAiAnomalyView() {
+            switchView('ai-anomaly-view');
+            const parentCrumb = document.getElementById('breadcrumb-parent');
+            const subCrumb = document.getElementById('breadcrumb-sub');
+            const arrowCrumb = document.getElementById('breadcrumb-arrow');
+            const titleHeading = document.getElementById('view-title-heading');
+            
+            parentCrumb.innerText = 'AI Driven Tools';
+            subCrumb.classList.remove('hidden');
+            arrowCrumb.classList.remove('hidden');
+            subCrumb.innerText = 'AI Anomaly Detection';
+            titleHeading.innerText = 'AI Anomaly Detection Management';
+            
+            const btn = document.getElementById('btn-ai-anomaly');
+            if(btn) btn.classList.add('bg-gray-100', 'text-black', 'border-l-4', 'border-[#2c3a4b]', 'font-bold');
+        }
+
+        function switchAiTab(tabName) {
+            document.querySelectorAll('.ai-tab').forEach(tab => {
+                tab.classList.remove('border-brandTeal', 'text-brandTextDark', 'font-bold');
+                tab.classList.add('border-transparent');
+            });
+            const rulesContent = document.getElementById('ai-rules-content');
+            const historyContent = document.getElementById('ai-history-content');
+
+            if (tabName === 'rules') {
+                document.getElementById('ai-tab-rules').classList.add('border-brandTeal', 'text-brandTextDark', 'font-bold');
+                document.getElementById('ai-tab-rules').classList.remove('border-transparent');
+                rulesContent.classList.remove('hidden');
+                historyContent.classList.add('hidden');
+            } else {
+                document.getElementById('ai-tab-history').classList.add('border-brandTeal', 'text-brandTextDark', 'font-bold');
+                document.getElementById('ai-tab-history').classList.remove('border-transparent');
+                historyContent.classList.remove('hidden');
+                rulesContent.classList.add('hidden');
+            }
+        }
+
+        function toggleAddRulePanel() {
+            const panel = document.getElementById('add-rule-panel');
+            panel.classList.toggle('hidden');
+        }
+
+        function switchPlayerTab(tabIndex) {
+            document.querySelectorAll('.player-tab').forEach((tab, index) => {
+                if (index === tabIndex) {
+                    tab.classList.add('border-brandTeal', 'text-brandTextDark', 'font-bold');
+                    tab.classList.remove('border-transparent');
+                } else {
+                    tab.classList.remove('border-brandTeal', 'text-brandTextDark', 'font-bold');
+                    tab.classList.add('border-transparent');
+                }
+            });
+            const overview = document.getElementById('player-overview-content');
+            const other = document.getElementById('other-player-content');
+            if (tabIndex === 0) {
+                overview.classList.remove('hidden');
+                other.classList.add('hidden');
+            } else {
+                overview.classList.add('hidden');
+                other.classList.remove('hidden');
+            }
+        }
+
+        function switchAlertView(alertName, parentCategory) {
+            switchView('alert-config-view');
+            document.getElementById('breadcrumb-parent').innerText = parentCategory;
+            const subCrumb = document.getElementById('breadcrumb-sub');
+            const arrowCrumb = document.getElementById('breadcrumb-arrow');
+            subCrumb.classList.remove('hidden');
+            arrowCrumb.classList.remove('hidden');
+            subCrumb.innerText = alertName;
+            document.getElementById('view-title-heading').innerText = alertName + ' Management Configurator';
+        }
+
+        function switchToolView(toolName) {
+            switchView('alert-config-view');
+            document.getElementById('breadcrumb-parent').innerText = 'Engineering Tools';
+            const subCrumb = document.getElementById('breadcrumb-sub');
+            const arrowCrumb = document.getElementById('breadcrumb-arrow');
+            subCrumb.classList.remove('hidden');
+            arrowCrumb.classList.remove('hidden');
+            subCrumb.innerText = toolName;
+            document.getElementById('view-title-heading').innerText = toolName + ' Interface Pipeline';
+        }
+
+        function switchBonusView(bonusName) {
+            switchView('alert-config-view');
+            document.getElementById('breadcrumb-parent').innerText = 'Bonus Anomaly Check';
+            const subCrumb = document.getElementById('breadcrumb-sub');
+            const arrowCrumb = document.getElementById('breadcrumb-arrow');
+            subCrumb.classList.remove('hidden');
+            arrowCrumb.classList.remove('hidden');
+            subCrumb.innerText = bonusName;
+            document.getElementById('view-title-heading').innerText = 'Bonus Evaluation: ' + bonusName;
+        }
+
+        function toggleSection(btn) {
+            const sub = btn.nextElementSibling;
+            if (sub && sub.classList.contains('subsection')) {
+                sub.classList.toggle('hidden');
+                const icon = btn.querySelector('i:last-child');
+                if (icon) icon.classList.toggle('rotate-180');
+            }
+        }
+
+        function openWidgetSidebar() {
+            document.getElementById('widget-control-sidebar').classList.remove('hidden');
+        }
+
+        function closeWidgetSidebar() {
+            document.getElementById('widget-control-sidebar').classList.add('hidden');
+        }
+
+        function openWidgetWizardModal() {
+            document.getElementById('widget-wizard-modal').classList.remove('hidden');
+        }
+
+        function closeWidgetWizardModal() {
+            document.getElementById('widget-wizard-modal').classList.add('hidden');
+        }
+
+        let currentChartType = 1;
+        let editingWidgetId = null;
+
+        function getChartMarkup(type) {
+            if (type === 0) {
+                return `<div class="w-full h-24 flex items-end justify-around"><div class="w-1 bg-brandTextLight h-[40%] rounded"></div><div class="w-1 bg-slate-500 h-[70%] rounded"></div><div class="w-1 bg-[#2c3a4b] h-[85%] rounded"></div><div class="w-1 bg-slate-300 h-[55%] rounded"></div></div>`;
+            } else if (type === 1) {
+                return `<div class="flex items-end justify-center space-x-3 h-32 w-full"><div class="w-4 bg-gray-400 h-[35%] rounded-t"></div><div class="w-4 bg-slate-500 h-[65%] rounded-t"></div><div class="w-4 bg-slate-300 h-[80%] rounded-t"></div><div class="w-4 bg-[#2c3a4b] h-[50%] rounded-t"></div></div>`;
+            } else if (type === 2) {
+                return `<div class="w-20 h-20 rounded-full border-8 border-transparent border-t-brandTeal border-r-slate-500 border-b-slate-300 border-l-[#2c3a4b] relative mx-auto my-auto"></div>`;
+            }
+            return '';
+        }
+
+        function selectChartType(type) {
+            currentChartType = type;
+            const preview = document.getElementById('preview-content');
+            preview.innerHTML = getChartMarkup(type);
+        }
+
+        function addNewWidgetToCanvas(name, category, typeChart, targetId = null) {
+            const canvasContainer = document.getElementById('dashboard-widgets-canvas');
+            if (targetId) {
+                const widget = document.getElementById(targetId);
+                if (widget) {
+                    const titleEl = widget.querySelector('h4');
+                    if (titleEl) {
+                        titleEl.innerHTML = `<i class="fa-solid fa-chart-pie mr-1.5 text-brandTextLight"></i> ${name} <span class="ml-1 text-[10px] text-brandTextLight font-normal opacity-80">[${typeChart}]</span>`;
+                    }
+                    const vizSlot = widget.querySelector('.widget-viz-slot');
+                    if (vizSlot) {
+                        vizSlot.innerHTML = getChartMarkup(currentChartType);
+                    }
+                    return;
+                }
+            }
+            const id = 'widget-node-' + Date.now();
+            const rawTileHtml = `<div class="bg-white p-5 rounded border border-gray-200/90 shadow-sm relative group" id="${id}">
+                <div class="flex justify-between items-center pb-2 border-b border-gray-100">
+                    <h4 class="text-xs font-bold text-brandTextDark flex items-center"><i class="fa-solid fa-chart-pie mr-1.5 text-brandTextLight"></i> ${name} <span class="ml-1 text-[10px] text-brandTextLight font-normal opacity-80">[${typeChart}]</span></h4>
+                    <div class="flex space-x-1.5 opacity-60 group-hover:opacity-100 transition">
+                        <button onclick="editWidgetModal(this)" class="text-brandTextLight hover:text-brandTextDark text-xs"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-brandTextLight hover:text-red-600 text-xs"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="py-4 flex justify-between items-end h-32">
+                    <div class="w-1/3 text-left">
+                        <p class="text-[10px] text-brandTextLight uppercase tracking-wide">Category</p>
+                        <p class="text-xs font-bold text-brandTextDark">${category}</p>
+                        <span class="text-[10px] bg-gray-50 border border-gray-200 text-brandTextDark px-1.5 py-0.5 rounded font-medium mt-1 inline-block">Active Stream</span>
+                    </div>
+                    <div class="widget-viz-slot flex-1 flex items-end justify-end h-full pt-4">
+                        ${getChartMarkup(currentChartType)}
+                    </div>
+                </div>
+            </div>`;
+            canvasContainer.insertAdjacentHTML('beforeend', rawTileHtml);
+        }
+
+        function saveWizardWidgetToWorkspace() {
+            const customTitle = document.getElementById('wizard-widget-name').value || 'Custom Dynamic Matrix';
+            const categorySelect = document.getElementById('wizard-widget-cat').value || 'Betting';
+            let chartTypeText = 'Bar Chart';
+            if (currentChartType === 0) chartTypeText = 'Line Spline';
+            else if (currentChartType === 2) chartTypeText = 'Pie Chart';
+            
+            addNewWidgetToCanvas(customTitle, categorySelect, chartTypeText, editingWidgetId);
+            closeWidgetWizardModal();
+        }
+
+        function editWidgetModal(btnElement) {
+            const widget = btnElement.closest('.group');
+            if (widget) {
+                editingWidgetId = widget.id;
+                const titleEl = widget.querySelector('h4');
+                let currentName = 'GGR Analytics Widget';
+                if (titleEl) {
+                    currentName = titleEl.textContent.trim().replace(/\[.*?\]/, '').trim();
+                }
+                document.getElementById('wizard-widget-name').value = currentName;
+            }
+            openWidgetWizardModal();
+        }
+
+        /* --- OPTIMIZED BOT INTERACTION, DYNAMIC POSITIONING & DRAG ENGINE --- */
+        let isRootyChatOpen = false;
+
+        function positionChatWindow() {
+            const chatWindow = document.getElementById('rooty-chat-window');
+            const containerRect = botContainer.getBoundingClientRect();
+            
+            // Standard width and height of the chat window
+            const chatWidth = 400;  
+            const chatHeight = 600; 
+            const gap = 12;
+
+            // Default position: Open directly above the Left-Top corner of the bot
+            let topPos = -chatHeight - gap;
+            let leftPos = 0;
+
+            // Screen boundary checks for overflow protection
+            if (containerRect.top - chatHeight < 10) {
+                // If too close to top, open below the bot button
+                topPos = containerRect.height + gap;
+            }
+
+            if (containerRect.left + chatWidth > window.innerWidth - 10) {
+                // If overflowing off right screen edge, shift left
+                leftPos = -(chatWidth - containerRect.width);
+            }
+
+            if (containerRect.left < 10) {
+                // If overflowing off left screen edge
+                leftPos = 0;
+            }
+
+            chatWindow.style.top = topPos + 'px';
+            chatWindow.style.left = leftPos + 'px';
+        }
+
+        function toggleRootyChat() {
+            const chatWindow = document.getElementById('rooty-chat-window');
+            isRootyChatOpen = !isRootyChatOpen;
+
+            if (isRootyChatOpen) {
+                positionChatWindow();
+                chatWindow.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    chatWindow.classList.remove('opacity-0', 'scale-95');
+                    chatWindow.classList.add('opacity-100', 'scale-100');
+                });
+            } else {
+                chatWindow.classList.remove('opacity-100', 'scale-100');
+                chatWindow.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    chatWindow.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        /* --- SMOOTH HARDWARE-ACCELERATED DRAG ENGINE --- */
+        const botContainer = document.getElementById('rooty-bot-container');
+        const botButton = document.getElementById('rooty-bot-button');
+        const normalEyes = document.getElementById('bot-normal-eyes');
+        const closedEyes = document.getElementById('bot-closed-eyes');
+        const lightningGroup = document.getElementById('bot-lightning-group');
+
+        let isDragging = false;
+        let hasMoved = false;
+        let startX, startY, initialLeft, initialTop;
+        let animationFrameId = null;
+        let currentX = 0, currentY = 0;
+
+        function onPointerDown(e) {
+            if (e.type === 'touchstart') e.preventDefault();
+
+            isDragging = true;
+            hasMoved = false;
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            startX = clientX;
+            startY = clientY;
+
+            const rect = botContainer.getBoundingClientRect();
+            initialLeft = rect.left;
+            initialTop = rect.top;
+
+            botContainer.style.bottom = 'auto';
+            botContainer.style.right = 'auto';
+            botContainer.style.left = `${initialLeft}px`;
+            botContainer.style.top = `${initialTop}px`;
+
+            normalEyes.classList.add('hidden');
+            closedEyes.classList.remove('hidden');
+            lightningGroup.classList.remove('hidden');
+
+            window.addEventListener('mousemove', onPointerMove);
+            window.addEventListener('mouseup', onPointerUp);
+            window.addEventListener('touchmove', onPointerMove, { passive: false });
+            window.addEventListener('touchend', onPointerUp);
+        }
+
+        function onPointerMove(e) {
+            if (!isDragging) return;
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const dx = clientX - startX;
+            const dy = clientY - startY;
+
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                hasMoved = true;
+            }
+
+            currentX = initialLeft + dx;
+            currentY = initialTop + dy;
+
+            if (!animationFrameId) {
+                animationFrameId = requestAnimationFrame(updateBotPosition);
+            }
+        }
+
+        function updateBotPosition() {
+            botContainer.style.left = `${currentX}px`;
+            botContainer.style.top = `${currentY}px`;
+            animationFrameId = null;
+        }
+
+        function onPointerUp() {
+            if (!isDragging) return;
+            isDragging = false;
+
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+
+            normalEyes.classList.remove('hidden');
+            closedEyes.classList.add('hidden');
+            lightningGroup.classList.add('hidden');
+
+            window.removeEventListener('mousemove', onPointerMove);
+            window.removeEventListener('mouseup', onPointerUp);
+            window.removeEventListener('touchmove', onPointerMove);
+            window.removeEventListener('touchend', onPointerUp);
+
+            if (!hasMoved) {
+                toggleRootyChat();
+            } else if (isRootyChatOpen) {
+                positionChatWindow();
+            }
+        }
+
+        botButton.addEventListener('mousedown', onPointerDown);
+        botButton.addEventListener('touchstart', onPointerDown, { passive: false });
+    </script>
+</body>
+</html>
